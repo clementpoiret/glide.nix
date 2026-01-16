@@ -19,6 +19,9 @@
   pipewire,
   wrapGAppsHook3,
   nix-update-script,
+  libGL,
+  udev,
+  ffmpeg,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -65,18 +68,33 @@ stdenv.mkDerivation (finalAttrs: {
     gtk3
     hicolor-icon-theme
     libXtst
+    udev
+    libGL
   ];
 
   runtimeDependencies = lib.optionals stdenv.isLinux [
     curl
     libva.out
     pciutils
+    libGL
+    udev
   ];
 
-  appendRunpaths = lib.optionals stdenv.isLinux [ "${pipewire}/lib" ];
+  appendRunpaths = lib.optionals stdenv.isLinux [
+    "${pipewire}/lib"
+    "${libGL}/lib"
+    "${udev}/lib"
+  ];
 
   # Firefox uses "relrhack" to manually process relocations from a fixed offset
   patchelfFlags = lib.optionals stdenv.isLinux [ "--no-clobber-old-sections" ];
+
+  # Add ffmpeg to LD_LIBRARY_PATH (mirroring Zen's approach) for media support
+  preFixup = lib.optionalString stdenv.isLinux ''
+    gappsWrapperArgs+=(
+      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ ffmpeg ]}"
+    )
+  '';
 
   unpackPhase = lib.optionalString stdenv.isDarwin ''
     runHook preUnpack
