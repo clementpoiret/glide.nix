@@ -98,6 +98,9 @@ stdenv.mkDerivation (finalAttrs: {
         lib.makeLibraryPath [
           ffmpeg
           pipewire
+          libGL
+          libva
+          gtk3
         ]
       }"
       --set MOZ_LEGACY_PROFILES 1
@@ -124,6 +127,10 @@ stdenv.mkDerivation (finalAttrs: {
 
         mkdir -p $out/bin $out/share/icons/hicolor/ $out/lib/glide-browser-bin-${finalAttrs.version}
         cp -t $out/lib/glide-browser-bin-${finalAttrs.version} -r *
+
+        # Ensure all binaries and shared objects are executable for autoPatchelfHook
+        find $out/lib/glide-browser-bin-${finalAttrs.version} -type f \( -name '*.so' -o -name '*.so.*' -o -name 'glide' \) -exec chmod +x {} +
+
         chmod +x $out/lib/glide-browser-bin-${finalAttrs.version}/glide
         iconDir=$out/share/icons/hicolor
         browserIcons=$out/lib/glide-browser-bin-${finalAttrs.version}/browser/chrome/icons/default
@@ -155,7 +162,7 @@ stdenv.mkDerivation (finalAttrs: {
 
   desktopItems = [
     (makeDesktopItem {
-      name = "glide-browser-bin";
+      name = "glide-browser";
       exec = "glide-browser --name glide-browser %U";
       icon = "glide-browser";
       desktopName = "Glide Browser";
