@@ -94,7 +94,12 @@ stdenv.mkDerivation (finalAttrs: {
   # 3. Set MOZ_ALLOW_DOWNGRADE=1 to prevent errors if rolling back updates
   preFixup = lib.optionalString stdenv.isLinux ''
     gappsWrapperArgs+=(
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ ffmpeg ]}"
+      --prefix LD_LIBRARY_PATH : "${
+        lib.makeLibraryPath [
+          ffmpeg
+          pipewire
+        ]
+      }"
       --set MOZ_LEGACY_PROFILES 1
       --set MOZ_ALLOW_DOWNGRADE 1
       --add-flags "--name=glide-browser"
