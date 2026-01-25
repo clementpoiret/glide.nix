@@ -23,6 +23,7 @@
   udev,
   libdrm,
   ffmpeg_7,
+  xdg_utils,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
