@@ -23,7 +23,6 @@
   udev,
   libdrm,
   ffmpeg_7,
-  xdg_utils,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -75,7 +74,6 @@ stdenv.mkDerivation (finalAttrs: {
     libdrm
     ffmpeg_7
     pipewire
-    xdg-utils
   ];
 
   runtimeDependencies = lib.optionals stdenv.isLinux [
