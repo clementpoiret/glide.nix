@@ -73,6 +73,8 @@ stdenv.mkDerivation (finalAttrs: {
     libGL
     libdrm
     ffmpeg_7
+    pipewire
+    xdg-utils
   ];
 
   runtimeDependencies = lib.optionals stdenv.isLinux [
@@ -82,13 +84,14 @@ stdenv.mkDerivation (finalAttrs: {
     libGL
     udev
     libdrm
+    pipewire
   ];
 
   appendRunpaths = lib.optionals stdenv.isLinux [
-    "${pipewire}/lib"
-    "${libGL}/lib"
-    "${udev}/lib"
-    "${libdrm}/lib"
+    "${lib.getLib pipewire}/lib"
+    "${lib.getLib libGL}/lib"
+    "${lib.getLib udev}/lib"
+    "${lib.getLib libdrm}/lib"
   ];
 
   # Firefox uses "relrhack" to manually process relocations from a fixed offset
@@ -99,11 +102,12 @@ stdenv.mkDerivation (finalAttrs: {
   # 3. Set MOZ_ALLOW_DOWNGRADE=1 to prevent errors if rolling back updates
   preFixup = lib.optionalString stdenv.isLinux ''
     gappsWrapperArgs+=(
-      --prefix LD_LIBRARY_PATH : "${ lib.makeLibraryPath [ ffmpeg_7 ] }"
+      --prefix LD_LIBRARY_PATH : "${ lib.makeLibraryPath [ ffmpeg_7 pipewire libGL libva ] }"
       --set MOZ_LEGACY_PROFILES 1
       --set MOZ_ALLOW_DOWNGRADE 1
       --add-flags "--name=glide-browser"
       --add-flags "--class=glide-browser"
+      --set XDG_CURRENT_DESKTOP "''${XDG_CURRENT_DESKTOP:-sway}"
     )
   '';
 
@@ -126,7 +130,7 @@ stdenv.mkDerivation (finalAttrs: {
         cp -t $out/lib/glide-browser-bin-${finalAttrs.version} -r *
 
         # Ensure all binaries and shared objects are executable for autoPatchelfHook
-        find $out/lib/glide-browser-bin-${finalAttrs.version} -type f \( -name '*.so' -o -name '*.so.*' -o -name 'glide' \) -exec chmod +x {} +
+        find $out/lib/glide-browser-bin-${finalAttrs.version} -type f -exec chmod +x {} +
 
         chmod +x $out/lib/glide-browser-bin-${finalAttrs.version}/glide
         iconDir=$out/share/icons/hicolor
