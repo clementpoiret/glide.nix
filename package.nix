@@ -21,7 +21,8 @@
   nix-update-script,
   libGL,
   udev,
-  ffmpeg,
+  libdrm,
+  ffmpeg_7,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -70,6 +71,8 @@ stdenv.mkDerivation (finalAttrs: {
     libXtst
     udev
     libGL
+    libdrm
+    ffmpeg_7
   ];
 
   runtimeDependencies = lib.optionals stdenv.isLinux [
@@ -78,12 +81,14 @@ stdenv.mkDerivation (finalAttrs: {
     pciutils
     libGL
     udev
+    libdrm
   ];
 
   appendRunpaths = lib.optionals stdenv.isLinux [
     "${pipewire}/lib"
     "${libGL}/lib"
     "${udev}/lib"
+    "${libdrm}/lib"
   ];
 
   # Firefox uses "relrhack" to manually process relocations from a fixed offset
@@ -94,15 +99,7 @@ stdenv.mkDerivation (finalAttrs: {
   # 3. Set MOZ_ALLOW_DOWNGRADE=1 to prevent errors if rolling back updates
   preFixup = lib.optionalString stdenv.isLinux ''
     gappsWrapperArgs+=(
-      --prefix LD_LIBRARY_PATH : "${
-        lib.makeLibraryPath [
-          ffmpeg
-          pipewire
-          libGL
-          libva
-          gtk3
-        ]
-      }"
+      --prefix LD_LIBRARY_PATH : "${ lib.makeLibraryPath [ ffmpeg_7 ] }"
       --set MOZ_LEGACY_PROFILES 1
       --set MOZ_ALLOW_DOWNGRADE 1
       --add-flags "--name=glide-browser"
