@@ -106,7 +106,6 @@ stdenv.mkDerivation (finalAttrs: {
       --set MOZ_ALLOW_DOWNGRADE 1
       --add-flags "--name=glide-browser"
       --add-flags "--class=glide-browser"
-      --set XDG_CURRENT_DESKTOP "''${XDG_CURRENT_DESKTOP:-sway}"
     )
   '';
 
