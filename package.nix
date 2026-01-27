@@ -7,8 +7,13 @@
   autoPatchelfHook,
   copyDesktopItems,
   curl,
+  dbus,        # Added: Required for IPC with Desktop Portal
   dbus-glib,
   gtk3,
+  glib,        # Added: Required for GObject interactions
+  cairo,       # Added: Common runtime dependency for Firefox
+  pango,       # Added: Common runtime dependency for Firefox
+  gdk-pixbuf,  # Added: Common runtime dependency for Firefox
   hicolor-icon-theme,
   libXtst,
   libva,
@@ -27,7 +32,7 @@
   mesa,
   libpulseaudio,
   libxkbcommon,
-  vulkan-loader,
+  wayland,     # Added: Required for Wayland Client interactions
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -70,8 +75,13 @@ stdenv.mkDerivation (finalAttrs: {
   buildInputs = lib.optionals stdenv.isLinux [
     adwaita-icon-theme
     alsa-lib
+    dbus        # Added
     dbus-glib
     gtk3
+    glib        # Added
+    cairo       # Added
+    pango       # Added
+    gdk-pixbuf  # Added
     hicolor-icon-theme
     libXtst
     udev
@@ -83,6 +93,7 @@ stdenv.mkDerivation (finalAttrs: {
     libpulseaudio
     libxkbcommon
     gsettings-desktop-schemas
+    wayland     # Added
   ];
 
   runtimeDependencies = lib.optionals stdenv.isLinux [
@@ -96,7 +107,10 @@ stdenv.mkDerivation (finalAttrs: {
     mesa
     libpulseaudio
     libxkbcommon
-    vulkan-loader
+    wayland     # Added
+    dbus        # Added
+    dbus-glib   # Added
+    gtk3        # Added
   ];
 
   appendRunpaths = lib.optionals stdenv.isLinux [
@@ -105,31 +119,41 @@ stdenv.mkDerivation (finalAttrs: {
     "${lib.getLib udev}/lib"
     "${lib.getLib libdrm}/lib"
     "${lib.getLib mesa}/lib"
-    "${lib.getLib vulkan-loader}/lib"
+    "${lib.getLib wayland}/lib" # Added
+    "${lib.getLib dbus}/lib"    # Added
   ];
 
   # Firefox uses "relrhack" to manually process relocations from a fixed offset
   patchelfFlags = lib.optionals stdenv.isLinux [ "--no-clobber-old-sections" ];
 
   preFixup = lib.optionalString stdenv.isLinux ''
+    # Add vital libraries to LD_LIBRARY_PATH so the binary can dlopen() them at runtime.
+    # This is critical for WebRTC Screen Sharing (PipeWire/Portal) and Wayland support.
     gappsWrapperArgs+=(
       --prefix LD_LIBRARY_PATH : "${ lib.makeLibraryPath [ 
           ffmpeg_7 
           pipewire 
-          vulkan-loader
+          libGL 
+          libva 
+          mesa 
+          libdrm 
+          udev 
+          libpulseaudio 
+          libxkbcommon 
+          alsa-lib
+          # Newly added libraries:
+          dbus
+          dbus-glib
+          glib
+          gtk3
+          wayland
+          pango
+          cairo
+          gdk-pixbuf
       ] }"
-      # Wayland + portal-based capture
-      --set MOZ_ENABLE_WAYLAND 1
-      --set MOZ_USE_XDG_DESKTOP_PORTAL 1
-      --set GTK_USE_PORTAL 1
-
-      # Critical for PipeWire on Nix: let libpipewire find SPA plugins/modules
-      --set SPA_PLUGIN_DIR "$pipewireLib/lib/spa-0.2"
-      --set PIPEWIRE_MODULE_DIR "$pipewireLib/lib/pipewire-0.3"
-
       --set MOZ_LEGACY_PROFILES 1
       --set MOZ_ALLOW_DOWNGRADE 1
-
+      --set MOZ_ENABLE_WAYLAND 1
       --add-flags "--name=glide-browser"
       --add-flags "--class=glide-browser"
     )
