@@ -23,6 +23,7 @@
   udev,
   libdrm,
   ffmpeg_7,
+  gsettings-desktop-schemas,
   mesa,
   libpulseaudio,
   libxkbcommon,
@@ -80,6 +81,7 @@ stdenv.mkDerivation (finalAttrs: {
     mesa
     libpulseaudio
     libxkbcommon
+    gsettings-desktop-schemas
   ];
 
   runtimeDependencies = lib.optionals stdenv.isLinux [
