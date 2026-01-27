@@ -23,6 +23,9 @@
   udev,
   libdrm,
   ffmpeg_7,
+  mesa,
+  libpulseaudio,
+  libxkbcommon,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -74,6 +77,9 @@ stdenv.mkDerivation (finalAttrs: {
     libdrm
     ffmpeg_7
     pipewire
+    mesa
+    libpulseaudio
+    libxkbcommon
   ];
 
   runtimeDependencies = lib.optionals stdenv.isLinux [
@@ -84,6 +90,9 @@ stdenv.mkDerivation (finalAttrs: {
     udev
     libdrm
     pipewire
+    mesa
+    libpulseaudio
+    libxkbcommon
   ];
 
   appendRunpaths = lib.optionals stdenv.isLinux [
@@ -91,19 +100,28 @@ stdenv.mkDerivation (finalAttrs: {
     "${lib.getLib libGL}/lib"
     "${lib.getLib udev}/lib"
     "${lib.getLib libdrm}/lib"
+    "${lib.getLib mesa}/lib" # Added: Ensure mesa is in RPATH
   ];
 
   # Firefox uses "relrhack" to manually process relocations from a fixed offset
   patchelfFlags = lib.optionals stdenv.isLinux [ "--no-clobber-old-sections" ];
 
-  # 1. Add ffmpeg to LD_LIBRARY_PATH (mirroring Zen's approach) for media support
-  # 2. Set MOZ_LEGACY_PROFILES=1 to prevent creating new profiles on every update
-  # 3. Set MOZ_ALLOW_DOWNGRADE=1 to prevent errors if rolling back updates
   preFixup = lib.optionalString stdenv.isLinux ''
     gappsWrapperArgs+=(
-      --prefix LD_LIBRARY_PATH : "${ lib.makeLibraryPath [ ffmpeg_7 pipewire libGL libva ] }"
+      --prefix LD_LIBRARY_PATH : "${ lib.makeLibraryPath [ 
+          ffmpeg_7 
+          pipewire 
+          libGL 
+          libva 
+          mesa 
+          libdrm 
+          udev 
+          libpulseaudio 
+          libxkbcommon 
+      ] }"
       --set MOZ_LEGACY_PROFILES 1
       --set MOZ_ALLOW_DOWNGRADE 1
+      --set MOZ_ENABLE_WAYLAND 1
       --add-flags "--name=glide-browser"
       --add-flags "--class=glide-browser"
     )
