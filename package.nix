@@ -2,6 +2,7 @@
   lib,
   stdenv,
   fetchurl,
+  # keep-sorted start
   adwaita-icon-theme,
   alsa-lib,
   autoPatchelfHook,
@@ -12,141 +13,120 @@
   hicolor-icon-theme,
   libXtst,
   libva,
+  mesa,
   makeBinaryWrapper,
   makeDesktopItem,
   patchelfUnstable,
   pciutils,
   pipewire,
   wrapGAppsHook3,
-  nix-update-script,
+  ffmpeg_7,
   libGL,
-  udev,
-  ffmpeg,
-  ...
+  libX11,
+  libXScrnSaver,
+  libpciaccess,
+  # Additional libraries for WebGL and GFX support
+  libffi,
+  libgcrypt,
+  libxcomposite,
+  libxdamage,
+  libxrandr,
+  libXt,
+  libevent,
+  # Ensure OpenGL and WebGL support
+  libGLU,
 }:
 stdenv.mkDerivation (finalAttrs: {
   pname = "glide-browser";
-  version = "0.1.58a";
+  version = "0.1.56a";
 
-  src =
-    let
-      sources = {
-        "x86_64-linux" = fetchurl {
-          url = "https://github.com/glide-browser/glide/releases/download/${finalAttrs.version}/glide.linux-x86_64.tar.xz";
-          sha256 = "sha256-yut/yXT+BJCFackLSRG7tLBD6m008k0lC62Qwt7aRX8=";
-        };
-        "aarch64-linux" = fetchurl {
-          url = "https://github.com/glide-browser/glide/releases/download/${finalAttrs.version}/glide.linux-aarch64.tar.xz";
-          sha256 = "sha256-K0y5qZUL7PiFyguuJs3ai7kHNoWb9E3aQT57W6J+BGk=";
-        };
-        "x86_64-darwin" = fetchurl {
-          url = "https://github.com/glide-browser/glide/releases/download/${finalAttrs.version}/glide.macos-x86_64.dmg";
-          sha256 = "sha256-DDxSTDWfCSlFZuBiLoQS5Y4o6NA6ZaDM+1Min1IhLXU=";
-        };
-        "aarch64-darwin" = fetchurl {
-          url = "https://github.com/glide-browser/glide/releases/download/${finalAttrs.version}/glide.macos-aarch64.dmg";
-          sha256 = "sha256-GW70sJW0IGZ5LMVCQA+2J4NXMN0Bj4c4G5anBDWZnuU=";
-        };
-      };
-    in
-    sources.${stdenv.hostPlatform.system};
+  src = fetchurl {
+    url = "https://github.com/glide-browser/glide/releases/download/${finalAttrs.version}/glide.linux-x86_64.tar.xz";
+    hash = "sha256-9v49DCPRgaJeyuTkIh3hoedkbOhKRnAj/sd/7qQKQyw=";
+  };
 
   nativeBuildInputs = [
+    autoPatchelfHook
     copyDesktopItems
     makeBinaryWrapper
-  ]
-  ++ lib.optionals stdenv.isLinux [
-    autoPatchelfHook
     patchelfUnstable
     wrapGAppsHook3
   ];
 
-  buildInputs = lib.optionals stdenv.isLinux [
+  buildInputs = [
     adwaita-icon-theme
     alsa-lib
     dbus-glib
     gtk3
     hicolor-icon-theme
     libXtst
-    udev
     libGL
+    libX11
+    libXScrnSaver
+    libpciaccess
+    ffmpeg_7
+    libffi
+    libgcrypt
+    libxcomposite
+    libxdamage
+    libxrandr
+    libXt
+    alsa-lib
+    libevent
+    mesa
+    libGLU
   ];
 
-  runtimeDependencies = lib.optionals stdenv.isLinux [
+  runtimeDependencies = [
     curl
     libva.out
+    mesa
     pciutils
     libGL
-    udev
   ];
 
-  appendRunpaths = lib.optionals stdenv.isLinux [
+  appendRunpaths = [
     "${pipewire}/lib"
     "${libGL}/lib"
-    "${udev}/lib"
   ];
 
-  # Firefox uses "relrhack" to manually process relocations from a fixed offset
-  patchelfFlags = lib.optionals stdenv.isLinux [ "--no-clobber-old-sections" ];
+  patchelfFlags = [ "--no-clobber-old-sections" ];
 
-  # 1. Add ffmpeg to LD_LIBRARY_PATH (mirroring Zen's approach) for media support
-  # 2. Set MOZ_LEGACY_PROFILES=1 to prevent creating new profiles on every update
-  # 3. Set MOZ_ALLOW_DOWNGRADE=1 to prevent errors if rolling back updates
-  preFixup = lib.optionalString stdenv.isLinux ''
+  preFixup = ''
     gappsWrapperArgs+=(
-      --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ ffmpeg ]}"
-      --set MOZ_LEGACY_PROFILES 1
-      --set MOZ_ALLOW_DOWNGRADE 1
-      --add-flags "--name=glide-browser"
-      --add-flags "--class=glide-browser"
-    )
+        --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath [ ffmpeg_7 ]}"
+      )
   '';
 
-  unpackPhase = lib.optionalString stdenv.isDarwin ''
-    runHook preUnpack
+  installPhase = ''
+    runHook preInstall
 
-    /usr/bin/hdiutil attach -nobrowse -readonly $src
-    cp -r /Volumes/Glide/Glide.app .
-    /usr/bin/hdiutil detach /Volumes/Glide
+    mkdir -p $out/bin $out/share/icons/hicolor/ $out/lib/glide-browser-bin-${finalAttrs.version}
+    cp -t $out/lib/glide-browser-bin-${finalAttrs.version} -r *
+    chmod +x $out/lib/glide-browser-bin-${finalAttrs.version}/glide
+    iconDir=$out/share/icons/hicolor
+    browserIcons=$out/lib/glide-browser-bin-${finalAttrs.version}/browser/chrome/icons/default
 
-    runHook postUnpack
+    for i in 16 32 48 64 128; do
+      iconSizeDir="$iconDir/''${i}x$i/apps"
+      mkdir -p $iconSizeDir
+      cp $browserIcons/default$i.png $iconSizeDir/glide-browser.png
+    done
+
+    ln -s $out/lib/glide-browser-bin-${finalAttrs.version}/glide $out/bin/glide
+    ln -s $out/bin/glide $out/bin/glide-browser
+
+    runHook postInstall
   '';
 
-  installPhase =
-    if stdenv.isLinux then
-      ''
-        runHook preInstall
-
-        mkdir -p $out/bin $out/share/icons/hicolor/ $out/lib/glide-browser-bin-${finalAttrs.version}
-        cp -t $out/lib/glide-browser-bin-${finalAttrs.version} -r *
-        chmod +x $out/lib/glide-browser-bin-${finalAttrs.version}/glide
-        iconDir=$out/share/icons/hicolor
-        browserIcons=$out/lib/glide-browser-bin-${finalAttrs.version}/browser/chrome/icons/default
-
-        for i in 16 32 48 64 128; do
-          iconSizeDir="$iconDir/''${i}x$i/apps"
-          mkdir -p $iconSizeDir
-          cp $browserIcons/default$i.png $iconSizeDir/glide-browser.png
-        done
-
-        ln -s $out/lib/glide-browser-bin-${finalAttrs.version}/glide $out/bin/glide
-        ln -s $out/bin/glide $out/bin/glide-browser
-
-        runHook postInstall
-      ''
-    else
-      ''
-        runHook preInstall
-
-        mkdir -p $out/Applications
-        cp -r Glide.app $out/Applications/
-
-        mkdir -p $out/bin
-        ln -s $out/Applications/Glide.app/Contents/MacOS/glide $out/bin/glide
-        ln -s $out/bin/glide $out/bin/glide-browser
-
-        runHook postInstall
-      '';
+  # WebGL/Graphics settings via environment variables
+  shellHook = ''
+    export MOZ_DISABLE_RDD_SANDBOX=1  # Disable RDD sandbox to prevent WebGL issues
+    export MOZ_WEBRENDER=1  # Enable WebRender for GPU acceleration
+    export MOZ_ACCELERATED=1  # Enable hardware acceleration for WebGL
+    export WebglAllowWindowsNativeGl=true  # Allow native GL for WebGL
+    export AllowWebgl2=true  # Enable WebGL2 support
+  '';
 
   desktopItems = [
     (makeDesktopItem {
@@ -187,25 +167,13 @@ stdenv.mkDerivation (finalAttrs: {
     })
   ];
 
-  passthru.updateScript = nix-update-script {
-    extraArgs = [
-      "--url"
-      "https://github.com/glide-browser/glide"
-    ];
-  };
-
   meta = {
     changelog = "https://glide-browser.app/changelog#${finalAttrs.version}";
     description = "Extensible and keyboard-focused web browser, based on Firefox (binary package)";
     homepage = "https://glide-browser.app/";
     license = lib.licenses.mpl20;
     sourceProvenance = [ lib.sourceTypes.binaryNativeCode ];
-    platforms = [
-      "x86_64-linux"
-      "aarch64-linux"
-      "x86_64-darwin"
-      "aarch64-darwin"
-    ];
+    platforms = [ "x86_64-linux" ];
     maintainers = with lib.maintainers; [ pyrox0 ];
     mainProgram = "glide-browser";
   };
