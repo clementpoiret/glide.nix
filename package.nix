@@ -27,6 +27,7 @@
   mesa,
   libpulseaudio,
   libxkbcommon,
+  vulkan-loader,
   ...
 }:
 stdenv.mkDerivation (finalAttrs: {
@@ -95,6 +96,7 @@ stdenv.mkDerivation (finalAttrs: {
     mesa
     libpulseaudio
     libxkbcommon
+    vulkan-loader
   ];
 
   appendRunpaths = lib.optionals stdenv.isLinux [
@@ -102,7 +104,8 @@ stdenv.mkDerivation (finalAttrs: {
     "${lib.getLib libGL}/lib"
     "${lib.getLib udev}/lib"
     "${lib.getLib libdrm}/lib"
-    "${lib.getLib mesa}/lib" # Added: Ensure mesa is in RPATH
+    "${lib.getLib mesa}/lib"
+    "${lib.getLib vulkan-loader}/lib"
   ];
 
   # Firefox uses "relrhack" to manually process relocations from a fixed offset
@@ -113,13 +116,7 @@ stdenv.mkDerivation (finalAttrs: {
       --prefix LD_LIBRARY_PATH : "${ lib.makeLibraryPath [ 
           ffmpeg_7 
           pipewire 
-          libGL 
-          libva 
-          mesa 
-          libdrm 
-          udev 
-          libpulseaudio 
-          libxkbcommon 
+          vulkan-loader
       ] }"
       --set MOZ_LEGACY_PROFILES 1
       --set MOZ_ALLOW_DOWNGRADE 1
