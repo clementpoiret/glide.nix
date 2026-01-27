@@ -118,9 +118,18 @@ stdenv.mkDerivation (finalAttrs: {
           pipewire 
           vulkan-loader
       ] }"
+      # Wayland + portal-based capture
+      --set MOZ_ENABLE_WAYLAND 1
+      --set MOZ_USE_XDG_DESKTOP_PORTAL 1
+      --set GTK_USE_PORTAL 1
+
+      # Critical for PipeWire on Nix: let libpipewire find SPA plugins/modules
+      --set SPA_PLUGIN_DIR "$pipewireLib/lib/spa-0.2"
+      --set PIPEWIRE_MODULE_DIR "$pipewireLib/lib/pipewire-0.3"
+
       --set MOZ_LEGACY_PROFILES 1
       --set MOZ_ALLOW_DOWNGRADE 1
-      --set MOZ_ENABLE_WAYLAND 1
+
       --add-flags "--name=glide-browser"
       --add-flags "--class=glide-browser"
     )
