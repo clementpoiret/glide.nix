@@ -41,6 +41,8 @@
   ...
 }:
 let
+  appId = "glide-browser";
+
   # These libraries are dlopen()'ed by the browser executable at runtime.
   # They MUST be in LD_LIBRARY_PATH for features to work.
   runtimeLibs = [
@@ -152,8 +154,8 @@ stdenv.mkDerivation (finalAttrs: {
       --set-default MOZ_ENABLE_WAYLAND 1
       
       # Required for the window manager to associate the window correctly
-      --add-flags "--name=glide-browser"
-      --add-flags "--class=glide-browser"
+      --add-flags "--name=${appId}"
+      --add-flags "--class=${appId}"
     )
   '';
 
@@ -182,11 +184,11 @@ stdenv.mkDerivation (finalAttrs: {
         for i in 16 32 48 64 128; do
           iconSizeDir="$iconDir/''${i}x$i/apps"
           mkdir -p $iconSizeDir
-          cp $browserIcons/default$i.png $iconSizeDir/glide-browser.png
+          cp $browserIcons/default$i.png $iconSizeDir/${appId}.png
         done
 
         ln -s $out/lib/glide-browser-bin-${finalAttrs.version}/glide $out/bin/glide
-        ln -s $out/bin/glide $out/bin/glide-browser
+        ln -s $out/bin/glide $out/bin/${appId}
 
         runHook postInstall
       ''
@@ -197,20 +199,20 @@ stdenv.mkDerivation (finalAttrs: {
         cp -r Glide.app $out/Applications/
         mkdir -p $out/bin
         ln -s $out/Applications/Glide.app/Contents/MacOS/glide $out/bin/glide
-        ln -s $out/bin/glide $out/bin/glide-browser
+        ln -s $out/bin/glide $out/bin/${appId}
         runHook postInstall
       '';
 
   desktopItems = [
     (makeDesktopItem {
-      name = "glide-browser-bin";
-      exec = "glide-browser --name glide-browser %U";
-      icon = "glide-browser";
+      name = appId;
+      exec = "${appId} --name ${appId} %U";
+      icon = appId;
       desktopName = "Glide Browser";
       genericName = "Web Browser";
       terminal = false;
       startupNotify = true;
-      startupWMClass = "glide-browser";
+      startupWMClass = appId;
       categories = [
         "Network"
         "WebBrowser"
@@ -226,15 +228,15 @@ stdenv.mkDerivation (finalAttrs: {
       actions = {
         new-window = {
           name = "New Window";
-          exec = "glide-browser --new-window %U";
+          exec = "${appId} --new-window %U";
         };
         new-private-window = {
           name = "New Private Window";
-          exec = "glide-browser --private-window %U";
+          exec = "${appId} --private-window %U";
         };
         profile-manager-window = {
           name = "Profile Manager";
-          exec = "glide-browser --ProfileManager";
+          exec = "${appId} --ProfileManager";
         };
       };
     })
@@ -260,6 +262,6 @@ stdenv.mkDerivation (finalAttrs: {
       "aarch64-darwin"
     ];
     maintainers = with lib.maintainers; [ pyrox0 ];
-    mainProgram = "glide-browser";
+    mainProgram = appId;
   };
 })
