@@ -53,8 +53,8 @@ let
     libGL
     libcanberra-gtk3
     libdrm
-    libgbm # Crucial for Screensharing (WebRTC)
-    libnotify # Crucial for Notifications
+    libgbm
+    libnotify
     libxkbcommon
     wayland
     dbus
@@ -69,7 +69,7 @@ let
 
     # Media (Microphone & Audio)
     pipewire
-    libpulseaudio # Crucial for Microphone (Firefox uses Pulse API)
+    libpulseaudio
     alsa-lib
     speechd-minimal
 
@@ -153,7 +153,6 @@ stdenv.mkDerivation (finalAttrs: {
   preFixup = lib.optionalString stdenv.isLinux ''
     gappsWrapperArgs+=(
       # Explicitly inject runtime libraries. 
-      # Fixes: Mic (libpulseaudio), Notifications (libnotify), HW Accel (libva/mesa), Screenshare (libgbm/pipewire)
       --prefix LD_LIBRARY_PATH : "${lib.makeLibraryPath runtimeLibs}"
 
       --set MOZ_APP_LAUNCHER "${appId}"
