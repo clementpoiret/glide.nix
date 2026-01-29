@@ -21,12 +21,15 @@
   ffmpeg_7,
   gdk-pixbuf,
   glib,
+  gsettings-desktop-schemas,
   gtk3,
+  libcanberra-gtk3,
   libGL,
   libdrm,
   libgbm,
   libnotify,
   libpulseaudio,
+  librsvg,
   libva,
   libxkbcommon,
   mesa,
@@ -48,6 +51,7 @@ let
   runtimeLibs = [
     # Core GUI & IPC
     libGL
+    libcanberra-gtk3
     libdrm
     libgbm # Crucial for Screensharing (WebRTC)
     libnotify # Crucial for Notifications
@@ -67,6 +71,7 @@ let
     pipewire
     libpulseaudio # Crucial for Microphone (Firefox uses Pulse API)
     alsa-lib
+    speechd-minimal
 
     # Hardware Acceleration & Codecs
     ffmpeg_7
@@ -129,6 +134,8 @@ stdenv.mkDerivation (finalAttrs: {
       speechd-minimal
       pciutils
       curl
+      gsettings-desktop-schemas
+      librsvg
     ]
   );
 
